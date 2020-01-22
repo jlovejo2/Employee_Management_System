@@ -5,7 +5,7 @@ const commandMenuChoices = require('./lib/commandMenu');
 const questions = require('./lib/questions');
 const compRoles = require('./lib/companyRoles');
 const compManagers = [1,2,3,4];
-const connection = require('./lib/SQL_login')
+const SQLquery = require('./lib/SQL_queries')
 
 const inquirerTypes = [
     'input', 'confirm', 'list'
@@ -17,24 +17,76 @@ const menuPrompt = new InquirerFunctions(inquirerTypes[2], 'menuChoice', questio
 // const employeeRole = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.addEmployee3, compRoles)
 
 
-
+//This code runs a list type inquirer for the choice of what option to choose at the main menu.
     inquirer
         .prompt([menuPrompt.list()]).then(operation => {
-            if(operation.menuChoice === "Add employee"){
-                addEmployee()
+
+            switch (operation.menuChoice){
+                case commandMenuChoices[0]:
+                return viewAllEmp();
+                
+                case commandMenuChoices[1]:
+                return viewAllEmpDep();
+                
+                case commandMenuChoices[2]:
+                return viewAllEmpManager();
+                
+                case commandMenuChoices[3]:
+                return viewAllEmpRole();
+                
+                case commandMenuChoices[4]:
+                return viewAllManager();
+                
+                case commandMenuChoices[5]:
+                return addEmp();
+                
+                case commandMenuChoices[6]:
+                return removeEmp();
+                
+                case commandMenuChoices[7]:
+                return updateEmpRole()
+                
+                case commandMenuChoices[8]:
+                return updateEmpManager();
+                
+                case commandMenuChoices[9]:
+                return updateEmpDep();
+                
+                case commandMenuChoices[10]:
+                return viewAllRoles();
+                
+                case commandMenuChoices[11]:
+                return addRole();
+                
+                case commandMenuChoices[12]:
+                return removeRole();
+                
+                case commandMenuChoices[13]:
+                return viewAllDep();
+                
+                case commandMenuChoices[14]:
+                return addDep();
+                
+                case commandMenuChoices[15]:
+                return removeDep();
             }
         })
 
 
-function addEmployee() {
+function addEmp() {
     const first_name = new InquirerFunctions(inquirerTypes[0], 'first_name', questions.addEmployee1);
     const last_name = new InquirerFunctions(inquirerTypes[0], 'last_name', questions.addEmployee2 );
     const emp_role = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.addEmployee3, compRoles);
     const emp_manager = new InquirerFunctions(inquirerTypes[2], 'employee_manager', questions.addEmployee4, compManagers);
 
-    Promise.all([first_name, last_name, emp_role, emp_manager]).then(prompts => {
+    Promise.all([first_name.ask(), last_name.ask(), emp_role.ask(), emp_manager.ask()]).then(prompts => {
         inquirer.prompt(prompts).then(emp_info => {
             console.log(emp_info);
+
+            const query = "INSERT INTO employees (first_name, last_name,  ) VALUES ?"
+            // const value = 
+            // const insertQuery = new SQLquery(query, )
+        
         })
     })
 } 
