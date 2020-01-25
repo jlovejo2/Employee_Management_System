@@ -51,7 +51,7 @@ function mainMenu() {
                     const actionChoice5 = "VIEW BY MANAGER"
                     // return viewAllEmpManager
                     dummyArr = [];
-                    EmpInfoPrompts(dummyArr,actionChoice5);
+                    EmpInfoPrompts(dummyArr, actionChoice5);
                     break;
 
                 case commandMenuChoices[3]:
@@ -80,7 +80,7 @@ function mainMenu() {
                     //This is the case for the update an employees role funtion
                     const actionChoice3 = "UPDATE EMP ROLE"
                     compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice3);
-                   
+
                     break;
 
                 case commandMenuChoices[8]:
@@ -90,6 +90,8 @@ function mainMenu() {
                     break;
 
                 case commandMenuChoices[9]:
+                    const actionChoice6 = "UPDATE EMP DEP"
+                    compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice4);
                     return updateEmpDep();
 
                 case commandMenuChoices[10]:
@@ -97,6 +99,7 @@ function mainMenu() {
                     return viewAllRoles();
 
                 case commandMenuChoices[11]:
+
                     return addRole();
 
                 case commandMenuChoices[12]:
@@ -137,28 +140,28 @@ function viewAllEmpDep() {
 
 function viewAllEmpManager(managerObj, namesArr) {
     console.log("Entered view employees by manager.")
-    
+
     const chosenManager = new InquirerFunctions(inquirerTypes[2], 'manager_choice', questions.searchByManager, namesArr);
 
     inquirer.prompt([chosenManager.ask()]).then(userChoice => {
         let chosenManagerID = 0;
         const chosenManagerFirstName = userChoice.manager_choice.split(" ", 1)
-        
+
         for (manager of managerObj) {
-            
-            if( chosenManagerFirstName[0] == manager.firstName) {
-                
+
+            if (chosenManagerFirstName[0] == manager.firstName) {
+
                 chosenManagerID = manager.ID;
             }
         }
-        
+
         const queryManagerSearch = `SELECT employee.last_name, employee.first_name, role.title, department.name
                                     FROM employee
                                     INNER JOIN role on role.id = employee.role_id
                                     INNER JOIN department on department.id = role.department_id
                                     WHERE employee.manager_id = (?) `
 
-        const managerSearch = new SQLquery (queryManagerSearch, chosenManagerID);
+        const managerSearch = new SQLquery(queryManagerSearch, chosenManagerID);
         managerSearch.generalTableQuery(mainMenu);
     })
 }
@@ -233,13 +236,13 @@ function EmpInfoPrompts(compRoles, actionChoice) {
 
                 })
             })
-        } else if (actionChoice == "VIEW BY MANAGER"){
+        } else if (actionChoice == "VIEW BY MANAGER") {
             viewAllEmpManager(managerObjArr, managerNamesArr);
         } else {
             Promise.all([first_name.ask(), last_name.ask()]).then(prompts => {
                 inquirer.prompt(prompts).then(emp_info => {
                     if (actionChoice == "UPDATE EMP ROLE") {
-                    EmpMultiplesCheck(emp_info, actionChoice, compRoles);
+                        EmpMultiplesCheck(emp_info, actionChoice, compRoles);
                     } else if (actionChoice == "UPDATE EMP MANAGER") {
                         EmpMultiplesCheck(emp_info, actionChoice, managerObjArr, managerNamesArr);
                     } else {
@@ -369,25 +372,25 @@ function deleteEmp(firstName, lastName, employeeID) {
 function updateEmpRole(employeeID, RolesArray) {
     console.log("Entered update employee role.")
 
-    const empNewRole = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.updateRole, RolesArray);  
+    const empNewRole = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.updateRole, RolesArray);
     const queryGetRoleId = `SELECT role.id
                     FROM role
                     Where role.title = (?);`
-        inquirer.prompt([empNewRole.ask()]).then(chosenRole => {
-            
-            connection.query(queryGetRoleId, chosenRole.employee_role, function(err,res){
-                if(err){
-                    throw err
-                }
+    inquirer.prompt([empNewRole.ask()]).then(chosenRole => {
 
-                const queryUpdateRoleId = `UPDATE employee
+        connection.query(queryGetRoleId, chosenRole.employee_role, function (err, res) {
+            if (err) {
+                throw err
+            }
+
+            const queryUpdateRoleId = `UPDATE employee
                                             SET employee.role_id = (?)
                                             WHERE employee.id = (?)`
 
-                const updateEmpRoleId = new SQLquery(queryUpdateRoleId, [res[0].id, employeeID ])
-                
-                updateEmpRoleId.update(mainMenu);  
-            })          
+            const updateEmpRoleId = new SQLquery(queryUpdateRoleId, [res[0].id, employeeID])
+
+            updateEmpRoleId.update(mainMenu, "Employee Role Updated!");
+        })
     })
 }
 
@@ -397,11 +400,11 @@ function updateEmpManager(employeeID, managerObjectArray) {
     const queryCurrentManager = `SELECT employee.manager_id
                                  FROM employee
                                  WHERE employee.id = (?);`
-    connection.query(queryCurrentManager, employeeID, function (err, res){
-        if(err){
+    connection.query(queryCurrentManager, employeeID, function (err, res) {
+        if (err) {
             throw err;
         }
-        
+
         const currentManagerID = res[0].manager_id;
 
         const managerChoices = managerObjectArray.filter(manager => {
@@ -412,11 +415,11 @@ function updateEmpManager(employeeID, managerObjectArray) {
 
         possibleNewManagerNames = [];
         for (manager of managerChoices) {
-            managerName ="ID: " + manager.ID + " " + manager.firstName + " " + manager.lastName;
+            managerName = "ID: " + manager.ID + " " + manager.firstName + " " + manager.lastName;
             possibleNewManagerNames.push(managerName);
         }
 
-        const newManagerChoice = new InquirerFunctions (inquirerTypes[2], 'new_Manager', questions.newManager, possibleNewManagerNames )
+        const newManagerChoice = new InquirerFunctions(inquirerTypes[2], 'new_Manager', questions.newManager, possibleNewManagerNames)
 
         inquirer.prompt([newManagerChoice]).then(userChoice => {
             const userInputSplitAtId = userChoice.new_Manager.split(" ", 2);
@@ -425,8 +428,8 @@ function updateEmpManager(employeeID, managerObjectArray) {
             const queryUpdateNewManager = `UPDATE employee
                                             SET employee.manager_id = (?)
                                             WHERE employee.id = (?)`
-            
-            connection.query(queryUpdateNewManager, [newManagerID,employeeID], function (err, res){
+
+            connection.query(queryUpdateNewManager, [newManagerID, employeeID], function (err, res) {
                 if (err) {
                     throw err;
                 }
@@ -449,11 +452,55 @@ function viewAllRoles() {
 }
 
 function viewAllDep() {
+
     const query = `SELECT department.name
                     FROM department`
+
     const depTable = new SQLquery(query);
 
     depTable.generalTableQuery(mainMenu);
+}
+
+function addRole() {
+
+    const queryDeps = "SELECT department.name FROM department;"
+
+    connection.query(queryDeps, function (err, res) {
+        if (err) {
+            throw err
+        }
+        let depNameArr = []
+        for (let i = 0; i < res.length; i++) {
+            depNameArr.push(res[i].name)
+        }
+
+        const whatRole = new InquirerFunctions(inquirerTypes[0], 'role_to_add', questions.newRole)
+        const whatSalary = new InquirerFunctions(inquirerTypes[0], 'role_salary', questions.salary)
+        const whatdepartment = new InquirerFunctions(inquirerTypes[2], 'department', questions.department, depNameArr)
+
+
+        Promise.all([whatRole.ask(), whatSalary.ask(), whatdepartment.ask()]).then(prompts => {
+            inquirer.prompt(prompts).then(userChoices => {
+
+                const getDepId = `SELECT department.id FROM department WHERE department.name = (?);`
+                connection.query(getDepId, userChoices.department, function (err, res) {
+                    if (err) {
+                        throw err
+                    }
+                    console.log(res);
+                    const addRolequery = `INSERT INTO role (role.title, role.salary, role.department_id)
+                                    VALUES ( (?), (?), (?));`
+
+                    const addRole = new SQLquery (addRolequery, [userChoices.role_to_add, userChoices.role_salary, res[0].id ] );
+
+                    addRole.update(mainMenu, "Role added!");
+                })
+            })
+        })
+    })
+
+
+
 }
 
 
