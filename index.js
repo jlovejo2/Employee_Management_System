@@ -75,7 +75,10 @@ function mainMenu() {
                     break;
 
                 case commandMenuChoices[8]:
-                    return updateEmpManager();
+                    //This is the case for updating an employees manager
+                    const actionChoice4 = "UPDATE EMP MANAGER"
+                    compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice4);
+                    break;
 
                 case commandMenuChoices[9]:
                     return updateEmpDep();
@@ -198,7 +201,13 @@ function EmpInfoPrompts(compRoles, actionChoice) {
         } else {
             Promise.all([first_name.ask(), last_name.ask()]).then(prompts => {
                 inquirer.prompt(prompts).then(emp_info => {
-                    EmpMulitplesCheck(emp_info, actionChoice, compRoles);
+                    if (actionChoice == "UPDATE EMP ROLE") {
+                    EmpMultiplesCheck(emp_info, actionChoice, compRoles);
+                    } else if (actionChoice == "UPDATE EMP MANAGER") {
+                        EmpMultiplesCheck(emp_info, actionChoice, managerObjArr, managerNamesArr);
+                    } else {
+                        EmpMultiplesCheck(emp_info, actionChoice);
+                    }
                 })
             })
         }
@@ -245,7 +254,7 @@ function addEmp(emp_info, managerObjArr) {
 }
 
 
-function EmpMulitplesCheck(emp_info, actionChoice, companyRolesArray) {
+function EmpMultiplesCheck(emp_info, actionChoice, arrayNeededForNextStep) {
 
     console.log("You've entered employee multiples check")
 
@@ -279,7 +288,9 @@ function EmpMulitplesCheck(emp_info, actionChoice, companyRolesArray) {
                 if (actionChoice === "DELETE") {
                     deleteEmp(chosenEmpFirstName, chosenEmpLastName, chosenEmpID);
                 } else if (actionChoice === "UPDATE EMP ROLE") {
-                    updateEmpRole(chosenEmpFirstName, chosenEmpLastName, chosenEmpID, chosenEmpRole, companyRolesArray);
+                    updateEmpRole(chosenEmpID, arrayNeededForNextStep);
+                } else if (actionChoice === "UPDATE EMP MANAGER") {
+                    updateEmpManager(chosenEmpID, arrayNeededForNextStep);
                 }
             })
 
@@ -293,8 +304,9 @@ function EmpMulitplesCheck(emp_info, actionChoice, companyRolesArray) {
             if (actionChoice === "DELETE") {
                 deleteEmp(empFirstName, empLastName, res[0].id)
             } else if (actionChoice === "UPDATE EMP ROLE") {
-                
-                updateEmpRole(empFirstName, empLastName, res[0].id, res[0].title, companyRolesArray);
+                updateEmpRole(res[0].id, arrayNeededForNextStep);
+            } else if (actionChoice === "UPDATE EMP MANAGER") {
+                updateEmpManager(res[0].id, arrayNeededForNextStep);
             }
         }
     })
@@ -317,16 +329,10 @@ function deleteEmp(firstName, lastName, employeeID) {
     })
 }
 
-function updateEmpRole(firstName, lastName, employeeID, employeeRole, RolesArray) {
+function updateEmpRole(employeeID, RolesArray) {
     console.log("Entered update employee role.")
-    console.log(firstName);
-    console.log(lastName);
-    console.log(employeeID);
-    console.log(employeeRole);
-    console.log(RolesArray);
 
-    const empNewRole = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.updateRole, RolesArray);
-    
+    const empNewRole = new InquirerFunctions(inquirerTypes[2], 'employee_role', questions.updateRole, RolesArray);  
     const queryGetRoleId = `SELECT role.id
                     FROM role
                     Where role.title = (?);`
@@ -345,15 +351,61 @@ function updateEmpRole(firstName, lastName, employeeID, employeeRole, RolesArray
 
                 const updateEmpRoleId = new SQLquery(queryUpdateRoleId, [res[0].id, employeeID ])
                 
-                updateEmpRoleId.update(mainMenu);
-                
+                updateEmpRoleId.update(mainMenu);  
+            })          
+    })
+}
+
+function updateEmpManager(employeeID, managerObjectArray) {
+    console.log("Entered update employee manager.")
+    console.log(employeeID);
+    console.log(managerObjectArray);
+
+    const queryCurrentManager = `SELECT employee.manager_id
+                                 FROM employee
+                                 WHERE employee.id = (?);`
+    connection.query(queryCurrentManager, employeeID, function (err, res){
+        if(err){
+            throw err;
+        }
+        
+        const currentManagerID = res[0].manager_id;
+
+        const managerChoices = managerObjectArray.filter(manager => {
+            if (manager.ID != currentManagerID) {
+                return true;
+            };
+        })
+
+        possibleNewManagerNames = [];
+        for (manager of managerChoices) {
+            managerName ="ID: " + manager.ID + " " + manager.firstName + " " + manager.lastName;
+            possibleNewManagerNames.push(managerName);
+        }
+
+        const newManagerChoice = new InquirerFunctions (inquirerTypes[2], 'new_Manager', questions.newManager, possibleNewManagerNames )
+
+        inquirer.prompt([newManagerChoice]).then(userChoice => {
+            const userInputSplitAtId = userChoice.new_Manager.split(" ", 2);
+            const newManagerID = userInputSplitAtId[1];
+
+            const queryUpdateNewManager = `UPDATE employee
+                                            SET employee.manager_id = (?)
+                                            WHERE employee.id = (?)`
+            
+            connection.query(queryUpdateNewManager, [newManagerID,employeeID], function (err, res){
+                if (err) {
+                    throw err;
+                }
+                console.log("Manager Updated!");
+                mainMenu();
             })
 
-           
-
+        })
     })
-    
 
+    // const currentManager
+    // console.log(managerNames);
 }
 
 
