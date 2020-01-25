@@ -1,17 +1,14 @@
-const mysql = require("mysql");
+
 const inquirer = require('inquirer');
 const figlet = require('figlet');
-const asTable = require('as-table');
 
 const connection = require("./lib/SQL_login");
-const InquirerFunctions = require('./lib/inquirer');
 const commandMenuChoices = require('./lib/commandMenu');
 const questions = require('./lib/questions');
-const compRoles = require('./lib/companyRoles');
-const SQLquery = require('./lib/SQL_queries');
-const query_code = require('./lib/query_code');
 
-const compManagers = [1, 2, 3, 4];
+const InquirerFunctions = require('./lib/inquirer');
+const SQLquery = require('./lib/SQL_queries');
+
 const inquirerTypes = [
     'input', 'confirm', 'list'
 ]
@@ -36,17 +33,21 @@ function mainMenu() {
             const query1 = "SELECT role.title FROM role"
             const compRolesArrayQuery = new SQLquery(query1);
 
+            const depNameQuery = "SELECT department.name FROM department";
+            const depNamesArrayQuery = new SQLquery(depNameQuery);
+
             switch (operation.menuChoice) {
 
-                case commandMenuChoices[0]:
+                case commandMenuChoices[2]:
                     //This is the case where user can view all the employees in the company
                     return viewAllEmp();
 
-                case commandMenuChoices[1]:
+                case commandMenuChoices[3]:
                     //This is the case where a user can view all the employees in a given department
-                    return viewAllEmpDep();
+                    depNamesArrayQuery.queryReturnResult(viewAllEmpDep);
+                    break;
 
-                case commandMenuChoices[2]:
+                case commandMenuChoices[4]:
                     //This is the case where a user can view all the employees under a given manager
                     const actionChoice5 = "VIEW BY MANAGER"
                     // return viewAllEmpManager
@@ -54,84 +55,94 @@ function mainMenu() {
                     EmpInfoPrompts(dummyArr, actionChoice5);
                     break;
 
-                case commandMenuChoices[3]:
+                case commandMenuChoices[5]:
                     //This is the case where user can view all the employes by their role title.  Salary and Department will also be listed
-                    return viewAllEmpRole();
+                    compRolesArrayQuery.getQueryNoRepeats(viewAllEmpRole)
+                    break;
 
-                case commandMenuChoices[4]:
+                case commandMenuChoices[6]:
                     //This is the case where user can view all the managers and the departments they are in
                     return viewAllManager();
 
-                case commandMenuChoices[5]:
-
+                case commandMenuChoices[11]:
                     //This is the case for adding an employee
                     const actionChoice1 = "ADD"
                     compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice1);
 
                     break;
 
-                case commandMenuChoices[6]:
+                case commandMenuChoices[12]:
                     //This is the case for deleting an employee
                     const actionChoice2 = "DELETE"
                     compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice2);
                     break;
 
-                case commandMenuChoices[7]:
+                case commandMenuChoices[13]:
                     //This is the case for the update an employees role funtion
                     const actionChoice3 = "UPDATE EMP ROLE"
                     compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice3);
 
                     break;
 
-                case commandMenuChoices[8]:
+                case commandMenuChoices[14]:
                     //This is the case for updating an employees manager
-                    const actionChoice4 = "UPDATE EMP MANAGER"
+                    const actionChoice4 = "UPDATE EMP MANAGER";
                     compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice4);
                     break;
 
-                case commandMenuChoices[9]:
-                    const actionChoice6 = "UPDATE EMP DEP"
-                    compRolesArrayQuery.getQueryNoRepeats(EmpInfoPrompts, actionChoice4);
-                    return updateEmpDep();
-
-                case commandMenuChoices[10]:
+                case commandMenuChoices[1]:
                     //This is the case for viewing all roles in the company.  It also shows salary and department the role is under
                     return viewAllRoles();
 
-                case commandMenuChoices[11]:
-
+                case commandMenuChoices[9]:
+                    //This is the case for adding a role to database.
                     return addRole();
 
-                case commandMenuChoices[12]:
-                    return removeRole();
+                case commandMenuChoices[10]:
+                    //This is the case for deleting a role to database.
+                    const actionChoice7 = "DELETE ROLE";
+                    compRolesArrayQuery.getQueryNoRepeats(deleteRole, actionChoice7);
+                    break;
+                // return removeRole();
 
-                case commandMenuChoices[13]:
+                case commandMenuChoices[0]:
                     //This is the case for viewing all the departments by name in the company
                     return viewAllDep();
 
-                case commandMenuChoices[14]:
-                    return addDep();
+                case commandMenuChoices[7]:
+                    //This is the case where user can add a department to database
+                    depNamesArrayQuery.queryReturnResult(addDep);
+                    break;
 
-                case commandMenuChoices[15]:
-                    return removeDep();
+                case commandMenuChoices[8]:
+                    //this is the case where user can delete a department from database
+                    depNamesArrayQuery.queryReturnResult(removeDep);
+                    break;
             }
         })
 }
 
 function viewAllEmp() {
-    const query = query_code.view_All_Query
+    const query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name
+                     FROM employee
+                     INNER JOIN role on role.id = employee.role_id
+                     INNER JOIN department on department.id = role.department_id;`
+
     const empTable = new SQLquery(query);
 
     empTable.generalTableQuery(mainMenu);
 }
 
-function viewAllEmpDep() {
-
-    const departmentNamePrompt = new InquirerFunctions(inquirerTypes[0], 'department_Name', questions.viewAllEmpByDep);
+function viewAllEmpDep(depNamesArray) {
+    
+    const departmentNamePrompt = new InquirerFunctions(inquirerTypes[2], 'department_Name', questions.viewAllEmpByDep, depNamesArray);
     inquirer.prompt(departmentNamePrompt.ask()).then(userResp => {
-        const query = query_code.view_All_Query + " AND department.name = ? ;"
-        console.log(query);
-        console.log(userResp.department_Name);
+
+        const query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name
+                        FROM employee
+                        INNER JOIN role on role.id = employee.role_id
+                        INNER JOIN department on department.id = role.department_id AND department.name = ? ;`
+
         const empByDepTable = new SQLquery(query, userResp.department_Name);
 
         empByDepTable.generalTableQuery(mainMenu);
@@ -139,11 +150,12 @@ function viewAllEmpDep() {
 }
 
 function viewAllEmpManager(managerObj, namesArr) {
-    console.log("Entered view employees by manager.")
+    
 
     const chosenManager = new InquirerFunctions(inquirerTypes[2], 'manager_choice', questions.searchByManager, namesArr);
 
     inquirer.prompt([chosenManager.ask()]).then(userChoice => {
+        console.log(`Manager Searched By: ${userChoice.manager_choice}`);
         let chosenManagerID = 0;
         const chosenManagerFirstName = userChoice.manager_choice.split(" ", 1)
 
@@ -166,8 +178,10 @@ function viewAllEmpManager(managerObj, namesArr) {
     })
 }
 
-function viewAllEmpRole() {
-    const rolePrompt = new InquirerFunctions(inquirerTypes[0], 'role_Title', questions.viewAllEmpByRole);
+function viewAllEmpRole(compRoles, actionChoice) {
+
+    const rolePrompt = new InquirerFunctions(inquirerTypes[2], 'role_Title', questions.viewAllEmpByRole, compRoles);
+
     inquirer.prompt(rolePrompt.ask()).then(userResp => {
         const query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name
                         FROM employee 
@@ -205,8 +219,6 @@ function EmpInfoPrompts(compRoles, actionChoice) {
         if (err) {
             throw err
         }
-
-        console.log(res);
 
         let managerNamesArr = [];
         let managerObjArr = [];
@@ -257,7 +269,7 @@ function EmpInfoPrompts(compRoles, actionChoice) {
 function addEmp(emp_info, managerObjArr) {
 
     console.log("You've entered employee ADD");
-    // console.log(emp_info);
+
 
     const queryRoleIdFromTitle = "SELECT role.id FROM role WHERE role.title = (?) ;"
 
@@ -340,7 +352,7 @@ function EmpMultiplesCheck(emp_info, actionChoice, arrayNeededForNextStep) {
 
         } else {
             console.log("One Employee Found!")
-            // console.log(res[0].id);
+
             if (actionChoice === "DELETE") {
                 deleteEmp(empFirstName, empLastName, res[0].id)
             } else if (actionChoice === "UPDATE EMP ROLE") {
@@ -441,7 +453,6 @@ function updateEmpManager(employeeID, managerObjectArray) {
     })
 }
 
-
 function viewAllRoles() {
     const query = `SELECT role.title, role.salary, department.name
                     FROM role
@@ -487,21 +498,117 @@ function addRole() {
                     if (err) {
                         throw err
                     }
-                    console.log(res);
+
                     const addRolequery = `INSERT INTO role (role.title, role.salary, role.department_id)
                                     VALUES ( (?), (?), (?));`
 
-                    const addRole = new SQLquery (addRolequery, [userChoices.role_to_add, userChoices.role_salary, res[0].id ] );
+                    const addRole = new SQLquery(addRolequery, [userChoices.role_to_add, userChoices.role_salary, res[0].id]);
 
                     addRole.update(mainMenu, "Role added!");
                 })
             })
         })
     })
+}
 
 
+function deleteRole(compRolesArr) {
+
+    console.log("You've entered role delete")
+
+    const whatRole = new InquirerFunctions(inquirerTypes[2], 'role_to_delete', questions.deleteRole, compRolesArr);
+
+    inquirer.prompt([whatRole.ask()]).then(userChoice => {
+
+        const role_id_Query = `SELECT role.id FROM role WHERE role.title = (?);`
+
+        connection.query(role_id_Query, userChoice.role_to_delete, function (err, res) {
+
+            const roleDeleteID = res[0].id;
+            const roleDeleteTitle = userChoice.role_to_delete;
+
+            if (res.length > 1) {
+                //Tell user role exists in multiple departments and make sure they want to delete it
+                console.log("Role found in multiple departments!");
+
+                const departmentsWithRolequery = `SELECT department.name, role.department_id
+                                                FROM department
+                                                INNER JOIN role on role.department_id = department.id AND role.title = (?);`
+
+                connection.query(departmentsWithRolequery, userChoice.role_to_delete, function (err, res) {
+                    if (err) throw err
+                    const departmentsWithRoleArr = [];
+                    for (let department of res) {
+                        departmentsWithRoleArr.push(department);
+                    }
+
+                    const whichDeparment = new InquirerFunctions(inquirerTypes[2], 'department_to_delete_Role_From', questions.departmentDeleteRole, departmentsWithRoleArr);
+
+                    inquirer.prompt([whichDeparment.ask()]).then(userChoice => {
+                        console.log(res);
+                        const departmentName_ID_Arr = res.filter(department => {
+                            if (department.name == userChoice.department_to_delete_Role_From) {
+                                return true;
+                            }
+                        })
+
+                        deleteRoleQuery2 = "DELETE FROM role WHERE role.title = (?) AND role.department_id = (?)"
+                        const deleteInstance2 = new SQLquery(deleteRoleQuery2, [roleDeleteTitle, departmentName_ID_Arr[0].department_id])
+                        deleteInstance2.delete(mainMenu);
+                    })
+                })
+
+            } else {
+                const deleteRoleQuery = "DELETE FROM role WHERE role.id = (?);"
+                const deleteInstance = new SQLquery(deleteRoleQuery, roleDeleteID);
+                deleteInstance.delete(mainMenu);
+
+            }
+        })
+
+    })
 
 }
+
+function addDep(depNameArr) {
+
+    const whatDep = new InquirerFunctions(inquirerTypes[0], 'dep_to_add', questions.newDep)
+
+    inquirer.prompt([whatDep.ask()]).then(userChoice => {
+
+        const alreadyExist = depNameArr.filter(department => {
+
+            if (department.name == userChoice.dep_to_add) return true;
+        })
+
+        if (alreadyExist.length >= 1) {
+            console.log("Department Already exists!")
+            mainMenu();
+        } else {
+            const addDepQuery = `INSERT INTO department (department.name) VALUES (?);`
+            const addDep = new SQLquery(addDepQuery, userChoice.dep_to_add);
+
+            addDep.update(mainMenu, "Department added!");
+        }
+    })
+}
+
+function removeDep(depNameArr) {
+
+    const whatDepartment = new InquirerFunctions(inquirerTypes[0], 'dep_to_delete', questions.deleteDep)
+
+    inquirer.prompt([whatDepartment.ask()]).then(userChoice => {
+
+        const deleteDepQuery = `DELETE FROM department WHERE department.name = (?);`
+        const deleteDep = new SQLquery(deleteDepQuery, userChoice.dep_to_delete);
+
+        deleteDep.update(mainMenu, "Department deleted!");
+    })
+}
+
+
+
+
 
 
 
