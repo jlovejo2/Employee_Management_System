@@ -61,6 +61,7 @@ This main menu holds all the functionality of the app.  It is here that you will
 * SQL
 
 ## NPMs Used:
+* NPM Node
 * NPM mysql
 * NPM inquirer
 * NPM figlet
