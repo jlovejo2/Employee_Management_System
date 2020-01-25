@@ -39,18 +39,27 @@ function mainMenu() {
             switch (operation.menuChoice) {
 
                 case commandMenuChoices[0]:
+                    //This is the case where user can view all the employees in the company
                     return viewAllEmp();
 
                 case commandMenuChoices[1]:
+                    //This is the case where a user can view all the employees in a given department
                     return viewAllEmpDep();
 
                 case commandMenuChoices[2]:
-                    return viewAllEmpManager();
+                    //This is the case where a user can view all the employees under a given manager
+                    const actionChoice5 = "VIEW BY MANAGER"
+                    // return viewAllEmpManager
+                    dummyArr = [];
+                    EmpInfoPrompts(dummyArr,actionChoice5);
+                    break;
 
                 case commandMenuChoices[3]:
+                    //This is the case where user can view all the employes by their role title.  Salary and Department will also be listed
                     return viewAllEmpRole();
 
                 case commandMenuChoices[4]:
+                    //This is the case where user can view all the managers and the departments they are in
                     return viewAllManager();
 
                 case commandMenuChoices[5]:
@@ -84,6 +93,7 @@ function mainMenu() {
                     return updateEmpDep();
 
                 case commandMenuChoices[10]:
+                    //This is the case for viewing all roles in the company.  It also shows salary and department the role is under
                     return viewAllRoles();
 
                 case commandMenuChoices[11]:
@@ -93,6 +103,7 @@ function mainMenu() {
                     return removeRole();
 
                 case commandMenuChoices[13]:
+                    //This is the case for viewing all the departments by name in the company
                     return viewAllDep();
 
                 case commandMenuChoices[14]:
@@ -124,8 +135,32 @@ function viewAllEmpDep() {
     })
 }
 
-function viewAllEmpManager() {
+function viewAllEmpManager(managerObj, namesArr) {
+    console.log("Entered view employees by manager.")
+    
+    const chosenManager = new InquirerFunctions(inquirerTypes[2], 'manager_choice', questions.searchByManager, namesArr);
 
+    inquirer.prompt([chosenManager.ask()]).then(userChoice => {
+        let chosenManagerID = 0;
+        const chosenManagerFirstName = userChoice.manager_choice.split(" ", 1)
+        
+        for (manager of managerObj) {
+            
+            if( chosenManagerFirstName[0] == manager.firstName) {
+                
+                chosenManagerID = manager.ID;
+            }
+        }
+        
+        const queryManagerSearch = `SELECT employee.last_name, employee.first_name, role.title, department.name
+                                    FROM employee
+                                    INNER JOIN role on role.id = employee.role_id
+                                    INNER JOIN department on department.id = role.department_id
+                                    WHERE employee.manager_id = (?) `
+
+        const managerSearch = new SQLquery (queryManagerSearch, chosenManagerID);
+        managerSearch.generalTableQuery(mainMenu);
+    })
 }
 
 function viewAllEmpRole() {
@@ -198,6 +233,8 @@ function EmpInfoPrompts(compRoles, actionChoice) {
 
                 })
             })
+        } else if (actionChoice == "VIEW BY MANAGER"){
+            viewAllEmpManager(managerObjArr, managerNamesArr);
         } else {
             Promise.all([first_name.ask(), last_name.ask()]).then(prompts => {
                 inquirer.prompt(prompts).then(emp_info => {
@@ -409,6 +446,14 @@ function viewAllRoles() {
     const roleTable = new SQLquery(query);
 
     roleTable.generalTableQuery(mainMenu);
+}
+
+function viewAllDep() {
+    const query = `SELECT department.name
+                    FROM department`
+    const depTable = new SQLquery(query);
+
+    depTable.generalTableQuery(mainMenu);
 }
 
 
