@@ -342,8 +342,6 @@ function updateEmpRole(employeeID, RolesArray) {
                 if(err){
                     throw err
                 }
-                console.log(employeeID);
-                console.log(res[0].id);
 
                 const queryUpdateRoleId = `UPDATE employee
                                             SET employee.role_id = (?)
@@ -358,8 +356,6 @@ function updateEmpRole(employeeID, RolesArray) {
 
 function updateEmpManager(employeeID, managerObjectArray) {
     console.log("Entered update employee manager.")
-    console.log(employeeID);
-    console.log(managerObjectArray);
 
     const queryCurrentManager = `SELECT employee.manager_id
                                  FROM employee
@@ -403,13 +399,17 @@ function updateEmpManager(employeeID, managerObjectArray) {
 
         })
     })
-
-    // const currentManager
-    // console.log(managerNames);
 }
 
 
+function viewAllRoles() {
+    const query = `SELECT role.title, role.salary, department.name
+                    FROM role
+                    INNER JOIN department ON department.id = role.department_id`
+    const roleTable = new SQLquery(query);
 
+    roleTable.generalTableQuery(mainMenu);
+}
 
 
 
