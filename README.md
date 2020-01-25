@@ -90,3 +90,4 @@ This main menu holds all the functionality of the app.  It is here that you will
     - Currently a manager can manage someone not in their department.  Not sure if its an issue but important to note.
     - One thing with code is that I have a SQLqueries file but still do queries in index.js  The reason I do this is because I was unable to figure out how to return the response object from the query when referencing the general method I created until the end of the week.
     - Currently when deleting a role or a department the user is not told if their are employees in existance with that role or in that department.  This is a problem because when they delete that role or department the employees are deleted too.
+    - View employees by manager will not always display proper manager if there are two managers with same name.  I ran out of time to duplicate the update check functionality to this function.
